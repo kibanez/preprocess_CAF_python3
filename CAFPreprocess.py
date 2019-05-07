@@ -93,15 +93,11 @@ class CAFPreprocess:
                                             datetime.today().strftime('%Y-%m-%d') +
                                             ".txt")
         self.output_cases_matched = os.path.join(self.output_path,
-                                         os.path.basename(f_cases).split(".txt")[0] +
-                                         "_" +
-                                         datetime.today().strftime('%Y-%m-%d') +
-                                         "_matched.txt")
+                                         "list_cases_matched_" +
+                                         datetime.today().strftime('%Y-%m-%d'))
         self.output_controls_matched = os.path.join(self.output_path,
-                                            os.path.basename(f_controls).split(".txt")[0] +
-                                            "_" +
-                                            datetime.today().strftime('%Y-%m-%d') +
-                                            "_matched.txt")
+                                            "list_controls_matched_" +
+                                            datetime.today().strftime('%Y-%m-%d'))
         self.output_log_file = os.path.join(self.output_path,
                                             "preprocessing_CAF_output" +
                                             datetime.today().strftime('%Y-%m-%d') +
@@ -175,7 +171,10 @@ class CAFPreprocess:
         """
         with open(f_output, 'w') as f:
             for item in l_cohort:
-                f.write("%s\n" % item)
+                if isinstance(item, list):
+                    f.write("%s\n" % item[0])
+                else:
+                    f.write("%s\n" % item)
 
     def reported_vs_genetic_gender_check(self):
         """
@@ -243,18 +242,20 @@ class CAFPreprocess:
 
         # Selecting controls depending on gender distribution in cases
         matched_controls = epy.phjSelectCaseControlDataset(phjCasesDF=df_cases,
-                                                      phjPotentialControlsDF=df_controls,
-                                                      phjUniqueIdentifierVarName='CGRSequenceID',
-                                                      phjMatchingVariablesList=
+                                                           phjPotentialControlsDF=df_controls,
+                                                           phjUniqueIdentifierVarName=
+                                                           'CGRSequenceID',
+                                                           phjMatchingVariablesList=
                                                            ['CGR_predicted_sex'],
-                                                      phjControlsPerCaseInt=self.cc_ratio,
-                                                      phjPrintResults=False)
+                                                           phjControlsPerCaseInt=
+                                                           int(self.cc_ratio),
+                                                           phjPrintResults=False)
 
         # Save matched/selected cases AND controls into matched cases AND controls respectively
         self.l_cases_matched = matched_controls.loc[matched_controls['case'] == 1][[
-            'CGRSequenceID']]
-        self.l_controls_matched = matched_controls.loc[matched_controls['case'] == 0][[
-            'CGRSequenceID']]
+            'CGRSequenceID']].values.tolist()
+        self.l_controls_matched = list(matched_controls.loc[matched_controls['case'] == 0][[
+            'CGRSequenceID']].values.tolist())
 
     def matching_age(self):
         pass
