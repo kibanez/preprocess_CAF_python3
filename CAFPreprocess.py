@@ -32,6 +32,9 @@ class CAFPreprocess:
         else:
             self.l_controls = self.read_cohort(f_controls)
 
+        # matched cases and control lists
+        self.l_cases_matched = []
+        self.l_controls_matched = []
 
         f_metadata = hash_cfg.get('metadata_file')
         if not os.path.isfile(f_metadata):
@@ -156,7 +159,9 @@ class CAFPreprocess:
         """
         # Update cases and control lists after preprocessing
         self.update_cohort_lists(self.l_cases, self.output_cases)
+        self.update_cohort_lists(self.l_cases_matched, self.output_cases_matched)
         self.update_cohort_lists(self.l_controls, self.output_controls)
+        self.update_cohort_lists(self.l_controls_matched, self.output_controls_matched)
 
         # Write summary of the CAF preprocessing
         json.dump(self.output_log, open(self.output_log_file, 'w'))
@@ -244,7 +249,12 @@ class CAFPreprocess:
                                                            ['CGR_predicted_sex'],
                                                       phjControlsPerCaseInt=self.cc_ratio,
                                                       phjPrintResults=False)
-        print(matched_controls)
+
+        # Save matched/selected cases AND controls into matched cases AND controls respectively
+        self.l_cases_matched = matched_controls.loc[matched_controls['case'] == 1][[
+            'CGRSequenceID']]
+        self.l_controls_matched = matched_controls.loc[matched_controls['case'] == 0][[
+            'CGRSequenceID']]
 
     def matching_age(self):
         pass
