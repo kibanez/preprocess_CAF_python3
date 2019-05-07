@@ -1,5 +1,5 @@
 import argparse
-import ConfigParser
+from configparser import ConfigParser
 import logging
 from CAFPreprocess import *
 
@@ -10,18 +10,16 @@ def read_cfg_file(config_file):
     :param config_file: path to the configuration file
     :return: dictionary containing parameters (as keys) and their values (as values)
     """
-    file_input = open(config_file, 'r')
-    config = ConfigParser.ConfigParser()
-    config.readfp(file_input)
+    config = ConfigParser()
+    config.read(config_file)
 
     hash_cfg = {}
-    for field in config.options('INPUT'):
+    for field in config['INPUT']:
         hash_cfg[field] = config.get('INPUT', field)
-    for field in config.options('OUTPUT'):
+    for field in config['OUTPUT']:
         hash_cfg[field] = config.get('OUTPUT', field)
-    for field in config.options('FEATURES'):
+    for field in config['FEATURES']:
         hash_cfg[field] = config.get('FEATURES', field)
-    file_input.close()
     return hash_cfg
 
 
