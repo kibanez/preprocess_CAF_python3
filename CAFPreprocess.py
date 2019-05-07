@@ -94,10 +94,10 @@ class CAFPreprocess:
                                             ".txt")
         self.output_cases_matched = os.path.join(self.output_path,
                                          "list_cases_matched_" +
-                                         datetime.today().strftime('%Y-%m-%d'))
+                                         datetime.today().strftime('%Y-%m-%d') + ".txt")
         self.output_controls_matched = os.path.join(self.output_path,
                                             "list_controls_matched_" +
-                                            datetime.today().strftime('%Y-%m-%d'))
+                                            datetime.today().strftime('%Y-%m-%d') + ".txt")
         self.output_log_file = os.path.join(self.output_path,
                                             "preprocessing_CAF_output" +
                                             datetime.today().strftime('%Y-%m-%d') +
