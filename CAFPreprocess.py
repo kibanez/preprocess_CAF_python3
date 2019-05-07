@@ -2,6 +2,7 @@ import json
 import os
 import numpy as np
 import pandas as pd
+import epydemiology as epy
 from datetime import datetime
 
 
@@ -48,6 +49,12 @@ class CAFPreprocess:
             raise IOError('An integer is expected for the contamination threshold')
         else:
             self.verify_bam_id = float(verify_bam_id)
+
+        cc_ratio = hash_cfg.get('cc_ratio')
+        if cc_ratio is None:
+            raise IOError('A ratio for cases-control is required')
+        else:
+            self.cc_ratio = cc_ratio
 
         match_gender = hash_cfg.get('match_gender')
         if match_gender is None:
@@ -216,14 +223,18 @@ class CAFPreprocess:
         :return: updated list of cases and controls after being matched between themselves
         """
         # Gender info: used the estimated gender by internal pipeline (in the metadata)
-        l_gender_cases = self.metadata_cases['CGR_predicted_sex'].tolist()
-        l_gender_controls = self.metadata_controls['CGR_predicted_sex'].tolist()
+        df_cases = self.metadata_cases[['CGRSequenceID', 'CGR_predicted_sex']]
+        df_controls = self.metadata_controls[['CGRSequenceID', 'CGR_predicted_sex']]
 
-        l_gender = l_gender_cases + l_gender_controls
-        casecont = np.repeat(np.array(["case", "control"]),
-                             [len(l_gender_cases), len(l_gender_controls)],
-                             axis=0)
-
+        # Selecting controls depending on gender distribution in cases
+        matched_controls = epy.phjSelectCaseControlDataset(phjCasesDF=df_cases,
+                                                      phjPotentialControlsDF=df_controls,
+                                                      phjUniqueIdentifierVarName='CGRSequenceID',
+                                                      phjMatchingVariablesList=
+                                                           ['CGR_predicted_sex'],
+                                                      phjControlsPerCaseInt=self.cc_ratio,
+                                                      phjPrintResults=False)
+        print(matched_controls)
 
     def matching_age(self):
         pass
