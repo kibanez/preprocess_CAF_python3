@@ -1,0 +1,26 @@
+Metadata-Version: 2.0
+Name: epydemiology
+Version: 0.1.29
+Summary: A library of Python code for epidemiologists
+Home-page: https://github.com/lvphj/epydemiology
+Author: Phil Jones
+Author-email: phjones@me.com
+License: MIT
+Download-URL: https://github.com/lvphj/epydemiology/archive/0.1.29.tar.gz
+Description-Content-Type: UNKNOWN
+Keywords: database,mysql,epidemiology,case-control study,odds ratio,relative risk,risk ratio,proportions,confidence intervals
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering :: Medical Science Apps.
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.4
+Requires-Dist: numpy
+Requires-Dist: pandas (>=0.19.2)
+Requires-Dist: openpyxl
+Requires-Dist: pymysql
+
+UNKNOWN
+
+
