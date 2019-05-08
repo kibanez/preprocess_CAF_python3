@@ -1,9 +1,8 @@
-# Preprocess case and control cohorts before running CAF
+# Harmonising case and control cohorts 
 
 ## Objective
-The idea of this pipeline is to preprocess data before running the collapsing analysis (CAF, https://confluence.astrazeneca.net/display/CFGR/Collapsing+Analysis). 
 
-Given a list of cases and a list of controls, the **aim** here is to harmonise as much as possible and filter out samples with consent withdrawn, contamination or mismatch between self reported and CGR estimated gender, for instance. It also harmonise samples so as to match gender or age distributions in both lists. Basically, the list of controls is sampled depending on the distribution of what the user asks based on the distribution along the cases.
+Given a list of cases and a list of controls, the **aim** here is to harmonise as much as possible and filter out samples with consent withdrawn, contamination or mismatch between self reported and estimated gender, for instance. It also harmonise samples so as to match gender or age distributions in both lists. Basically, the list of controls is sampled depending on the distribution of what the user asks based on the distribution along the cases.
 
 ## Input
 
@@ -14,9 +13,9 @@ Given a list of cases and a list of controls, the **aim** here is to harmonise a
 
 ## Output
 
-- New file with the new list of cases for running CAF
-- New file with the new list of controls for running CAF
-- log output file including the features and thresholds criteria used in the preprocessing and the CGRSequenceIDs affected with different filters
+- New file with the new list of cases 
+- New file with the new list of controls
+- log output file including the features and thresholds criteria used in the preprocessing and the IDs affected with different filters
 
 ## Filters
 
@@ -49,7 +48,6 @@ This is based on the control and case cohort distributions. The user needs to pr
 
 
 ### 1. Work on the config file and use it to point to all the necessary files
-Use the example [config](https://github.com/AstraZeneca-CGR/preprocess_CAF/blob/master/configuration_files/preprocessing_config.cfg) file as a template to define the locations of all the files and variables.
 
 ### 2. Load the virtual environment
 ```
