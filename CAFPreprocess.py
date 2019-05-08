@@ -19,7 +19,7 @@ class CAFPreprocess:
             raise IOError('The file containing the list of cases %s dose not exist'
                           % f_cases)
         else:
-            self.l_cases = self.read_cohort(f_cases)
+            self.l_cases = self.read_cohort(f_cases, 0)
 
         self.id_controls = hash_cfg.get('id_controls')
         if self.id_controls not in ("CGRSequenceID", "SampleID"):
@@ -30,7 +30,7 @@ class CAFPreprocess:
             raise IOError('The file containing the list of controls %s dose not exist'
                           % f_controls)
         else:
-            self.l_controls = self.read_cohort(f_controls)
+            self.l_controls = self.read_cohort(f_controls, 0)
 
         # matched cases and control lists
         self.l_cases_matched = []
@@ -70,6 +70,8 @@ class CAFPreprocess:
             raise IOError('A boolean value is expected for the age match')
         else:
             self.match_age = True if match_age == 'True' else False
+            self.l_cases_age = self.read_cohort(f_cases, 1)
+            self.l_controls_age = self.read_cohort(f_controls, 1)
 
         match_ancestry = hash_cfg.get('match_ancestry')
         if match_ancestry is None:
@@ -105,16 +107,17 @@ class CAFPreprocess:
         # We init output dict first with the info we get from the config file
         self.output_log = hash_cfg
 
-    def read_cohort(self, file_cohort):
+    def read_cohort(self, file_cohort, column):
         """
         Reads a file containing individuals within a cohort (cases/controls) and
         it returns a list of them
         :param file_cohort: path to the file containing the list of individuals
+        :param column: the column we want to read
         :return: list of CGRSequenceID
         """
-        cohort_data = pd.read_csv(file_cohort, sep='\t',
+        cohort_data = pd.read_csv(file_cohort, sep=',',
                                   error_bad_lines=False, header=None)
-        return cohort_data.iloc[:, 0].tolist()
+        return cohort_data.iloc[:, int(column)].tolist()
 
     def read_metadata(self, file_metadata, l_cohort, id_selection):
         """
