@@ -10,10 +10,11 @@ class CAFPreprocess:
 
     def __init__(self, hash_cfg):
         # Input parameters
-        self.id_cases = hash_cfg.get('id_cases')
-        if self.id_cases not in ("CGRSequenceID", "SampleID"):
-            raise IOError('The ID used for the list of cases is missing - '
+        self.id_cc = hash_cfg.get('id_cc')
+        if self.id_cc not in ("CGRSequenceID", "SampleID"):
+            raise IOError('The ID used for the list of cases and controls is missing - '
                           'Please specify `CGRSequenceID` or `SampleID`')
+
         f_cases = hash_cfg.get('list_cases')
         if not os.path.isfile(f_cases):
             raise IOError('The file containing the list of cases %s dose not exist'
@@ -21,10 +22,6 @@ class CAFPreprocess:
         else:
             self.l_cases = self.read_cohort(f_cases, 0)
 
-        self.id_controls = hash_cfg.get('id_controls')
-        if self.id_controls not in ("CGRSequenceID", "SampleID"):
-            raise IOError('The ID used for the list of controls is missing - '
-                          'Please specify `CGRSequenceID` or `SampleID`')
         f_controls = hash_cfg.get('list_controls')
         if not os.path.isfile(f_controls):
             raise IOError('The file containing the list of controls %s dose not exist'
@@ -42,10 +39,10 @@ class CAFPreprocess:
         else:
             self.metadata_cases = self.read_metadata(f_metadata,
                                                      self.l_cases,
-                                                     self.id_cases)
+                                                     self.id_cc)
             self.metadata_controls = self.read_metadata(f_metadata,
                                                         self.l_controls,
-                                                        self.id_controls)
+                                                        self.id_cc)
 
         verify_bam_id = hash_cfg.get('verifybamid')
         if verify_bam_id is None:
@@ -59,25 +56,23 @@ class CAFPreprocess:
         else:
             self.cc_ratio = cc_ratio
 
-        match_gender = hash_cfg.get('match_gender')
-        if match_gender is None:
-            raise IOError('A boolean value is expected for the gender match')
+        self.list_matching = hash_cfg.get('list_matching').split(',')
+        if len(self.list_matching) > 0:
+            for match_name in self.list_matching:
+                if match_name == 'gender':
+                    self.match_gender = True
+                elif match_name == 'age':
+                    self.match_age = True
+                elif match_name == "ancestry":
+                    self.match_ancestry = True
         else:
-            self.match_gender = True if match_gender == 'True' else False
+            self.match_gender = False
+            self.match_age = False
+            self.match_ancestry = False
 
-        match_age = hash_cfg.get('match_age')
-        if match_age is None:
-            raise IOError('A boolean value is expected for the age match')
-        else:
-            self.match_age = True if match_age == 'True' else False
+        if self.match_age:
             self.df_cases_age = self.read_cohort_age(f_cases)
             self.df_controls_age = self.read_cohort_age(f_controls)
-
-        match_ancestry = hash_cfg.get('match_ancestry')
-        if match_ancestry is None:
-            raise IOError('A boolean value is expected for the ancestry match')
-        else:
-            self.match_ancestry = True if match_ancestry == 'True' else False
 
         # Output parameters
         output_path = hash_cfg.get('output_path')
@@ -95,11 +90,11 @@ class CAFPreprocess:
                                             datetime.today().strftime('%Y-%m-%d') +
                                             ".txt")
         self.output_cases_matched = os.path.join(self.output_path,
-                                         "list_cases_matched_" +
-                                         datetime.today().strftime('%Y-%m-%d') + ".txt")
+                                                 "list_cases_matched_" +
+                                                 datetime.today().strftime('%Y-%m-%d') + ".txt")
         self.output_controls_matched = os.path.join(self.output_path,
-                                            "list_controls_matched_" +
-                                            datetime.today().strftime('%Y-%m-%d') + ".txt")
+                                                    "list_controls_matched_" +
+                                                    datetime.today().strftime('%Y-%m-%d') + ".txt")
         self.output_log_file = os.path.join(self.output_path,
                                             "preprocessing_CAF_output" +
                                             datetime.today().strftime('%Y-%m-%d') +
@@ -131,7 +126,7 @@ class CAFPreprocess:
                                   error_bad_lines=False, header=None)
         l_ids = cohort_data.iloc[:, 0].tolist()
         l_age = cohort_data.iloc[:, 1].tolist()
-        dict_age = {'id': l_ids, 'age': l_age}
+        dict_age = {self.id_cc: l_ids, 'age': l_age}
         return pd.DataFrame(dict_age)
 
     def read_metadata(self, file_metadata, l_cohort, id_selection):
@@ -209,10 +204,10 @@ class CAFPreprocess:
 
         mismatch_cases = [i for i, (a, b) in enumerate(zip(report_gender_cases,
                                                            estimated_gender_cases)) if a != b]
-        self.output_log['repogen_cases'] = list(np.array(list(self.metadata_cases[self.id_cases]))
+        self.output_log['repogen_cases'] = list(np.array(list(self.metadata_cases[self.id_cc]))
                                                 [mismatch_cases])
         # Update the list of cases excluding mismatches gender cases
-        self.l_cases = np.delete(list(self.metadata_cases[self.id_cases]), mismatch_cases)
+        self.l_cases = np.delete(list(self.metadata_cases[self.id_cc]), mismatch_cases)
         self.metadata_cases = self.metadata_cases.drop(
             self.metadata_cases.index[mismatch_cases]
         )
@@ -224,10 +219,10 @@ class CAFPreprocess:
                                                     estimated_gender_controls)
                              if i != j]
         self.output_log['repogen_controls'] = list(np.array(list(self.metadata_controls[
-                                                                     self.id_cases]))
+                                                                     self.id_cc]))
                                                    [mismatch_controls])
         # Update the list of controls excluding mismatches gender sequences
-        self.l_controls = np.delete(self.metadata_controls[self.id_cases], mismatch_controls)
+        self.l_controls = np.delete(self.metadata_controls[self.id_cc], mismatch_controls)
         self.metadata_controls = self.metadata_controls.drop(
             self.metadata_controls.index[mismatch_controls]
         )
@@ -331,6 +326,43 @@ class CAFPreprocess:
         self.l_controls_matched = list(matched_controls.loc[matched_controls['case'] == 0][[
             'CGRSequenceID']].values.tolist())
 
-    def matching_gender_and_agen(self):
-        pass
+    def matching_list(self):
+        """
+        Function that matches a combination of features entered by the user.
+        - If the list is empty, only c-c ratio is taken into account and controls are selected
+        randomly
+        - Features within the list are considered together, controls will be matched depending
+        on the values considering all features
+        - If the list contains `age` we will do a special analysis on this. since we need to take
+        information particularly from the file with the case list
+        :return: updated list of cases and controls matched, after being matched between themselves
+        """
+        # list of variables to match
+        if len(self.list_matching) == 0:
+            l_matching_variables = None
+        else:
+            l_matching_variables = self.list_matching
+            # Leave `age` at the end of the list, if exists
+            if 'age' in l_matching_variables:
+                l_matching_variables.remove('age')
+                l_matching_variables.append('age')
+
+        matched_controls = epy.phjSelectCaseControlDataset(phjCasesDF=
+                                                           self.df_cases_age,
+                                                           phjPotentialControlsDF=
+                                                           self.df_controls_age,
+                                                           phjUniqueIdentifierVarName=
+                                                           self.id_cc,
+                                                           phjMatchingVariablesList=
+                                                           l_matching_variables,
+                                                           phjControlsPerCaseInt=
+                                                           int(self.cc_ratio),
+                                                           phjPrintResults=False)
+
+        # Save matched/selected cases AND controls into matched cases AND controls respectively
+        self.l_cases_matched = matched_controls.loc[matched_controls['case'] == 1][[
+            self.id_cc]].values.tolist()
+        self.l_controls_matched = list(matched_controls.loc[matched_controls['case'] == 0][[
+            self.id_cc]].values.tolist())
+
 
