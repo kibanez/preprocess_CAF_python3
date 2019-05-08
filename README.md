@@ -9,6 +9,8 @@ Given a list of cases and a list of controls, the **aim** here is to harmonise a
 
 - Configuration file -- features/parameters to analyse together with their thresholds, paths to the files including the list of cases and controls, path to the QC metadata
 
+- The list of features to select can by anyone included in the metadata + age (provided by the user) so far. Eventually I'll be working on this and adding more if necessary.
+
 
 ## Output
 
