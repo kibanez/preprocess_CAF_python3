@@ -70,8 +70,8 @@ class CAFPreprocess:
             raise IOError('A boolean value is expected for the age match')
         else:
             self.match_age = True if match_age == 'True' else False
-            self.l_cases_age = self.read_cohort(f_cases, 1)
-            self.l_controls_age = self.read_cohort(f_controls, 1)
+            self.df_cases_age = self.read_cohort_age(f_cases)
+            self.df_controls_age = self.read_cohort_age(f_controls)
 
         match_ancestry = hash_cfg.get('match_ancestry')
         if match_ancestry is None:
@@ -118,6 +118,21 @@ class CAFPreprocess:
         cohort_data = pd.read_csv(file_cohort, sep=',',
                                   error_bad_lines=False, header=None)
         return cohort_data.iloc[:, int(column)].tolist()
+
+    def read_cohort_age(self, file_cohort):
+        """
+        Reads a file containing individuals within a cohort (cases/controls) together with the
+        age information
+        :param file_cohort: path to the file containing the list of individuals + age
+        (separated by `,`)
+        :return: dataframe containing id and age
+        """
+        cohort_data = pd.read_csv(file_cohort, sep=',',
+                                  error_bad_lines=False, header=None)
+        l_ids = cohort_data.iloc[:, 0].tolist()
+        l_age = cohort_data.iloc[:, 1].tolist()
+        dict_age = {'id': l_ids, 'age': l_age}
+        return pd.DataFrame(dict_age)
 
     def read_metadata(self, file_metadata, l_cohort, id_selection):
         """
@@ -235,8 +250,8 @@ class CAFPreprocess:
     def matching_gender(self):
         """
         Function that finds and filters controls matching the cases and controls as possible
-        Using matchControls function from e1071 R library
-        https://www.rdocumentation.org/packages/e1071/versions/1.7-1/topics/matchControls
+        Using epy python library
+        https://pypi.org/project/epydemiology/0.1.4/
         :return: updated list of cases and controls after being matched between themselves
         """
         # Gender info: used the estimated gender by internal pipeline (in the metadata)
@@ -261,9 +276,60 @@ class CAFPreprocess:
             'CGRSequenceID']].values.tolist())
 
     def matching_age(self):
-        pass
+        """
+        Function that matches each case in turn and selects the relevant number of control subjects
+        from the second dataframe, matching on the list of variables.
+        Using epy python library
+        https://pypi.org/project/epydemiology/0.1.4/
+        :return: updated list of cases and controls after being matched between themselves
+        """
+        # Selecting controls depending on age distribution in cases
+        matched_controls = epy.phjSelectCaseControlDataset(phjCasesDF=
+                                                           self.df_cases_age,
+                                                           phjPotentialControlsDF=
+                                                           self.df_controls_age,
+                                                           phjUniqueIdentifierVarName=
+                                                           'id',
+                                                           phjMatchingVariablesList=
+                                                           ['age'],
+                                                           phjControlsPerCaseInt=
+                                                           int(self.cc_ratio),
+                                                           phjPrintResults=False)
+
+        # Save matched/selected cases AND controls into matched cases AND controls respectively
+        self.l_cases_matched = matched_controls.loc[matched_controls['case'] == 1][[
+            'id']].values.tolist()
+        self.l_controls_matched = list(matched_controls.loc[matched_controls['case'] == 0][[
+            'id']].values.tolist())
 
     def matching_ancestry(self):
-        pass
+        """
+        Function that matches following c-c ratio cases and controls based on the ancestry
+        information
+        :return: updated list of cases and controls after being matched between themselves
+        """
+        # Ancestry info: used the estimated ancestry from peddy from the internal pipeline
+        # (in the metadata)
+        df_cases = self.metadata_cases[['CGRSequenceID', 'peddy_ancestry_pred']]
+        df_controls = self.metadata_controls[['CGRSequenceID', 'peddy_ancestry_pred']]
 
+        # Selecting controls depending on gender distribution in cases
+        matched_controls = epy.phjSelectCaseControlDataset(phjCasesDF=df_cases,
+                                                           phjPotentialControlsDF=df_controls,
+                                                           phjUniqueIdentifierVarName=
+                                                           'CGRSequenceID',
+                                                           phjMatchingVariablesList=
+                                                           ['peddy_ancestry_pred'],
+                                                           phjControlsPerCaseInt=
+                                                           int(self.cc_ratio),
+                                                           phjPrintResults=False)
+
+        # Save matched/selected cases AND controls into matched cases AND controls respectively
+        self.l_cases_matched = matched_controls.loc[matched_controls['case'] == 1][[
+            'CGRSequenceID']].values.tolist()
+        self.l_controls_matched = list(matched_controls.loc[matched_controls['case'] == 0][[
+            'CGRSequenceID']].values.tolist())
+
+    def matching_gender_and_agen(self):
+        pass
 
