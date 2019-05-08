@@ -142,8 +142,9 @@ class CAFPreprocess:
         :param id_selection: binary value: "CGRSequenceID" or "SampleID"
         :return: dict with all metadata columns
         """
+        l_cohort_str = [str(i) for i in l_cohort]
         qc_metadata = pd.read_csv(file_metadata, sep=',', error_bad_lines=False)
-        return qc_metadata.loc[qc_metadata[id_selection].isin(l_cohort)]
+        return qc_metadata.loc[qc_metadata[id_selection].isin(l_cohort_str)]
 
     def filter_out_contamination(self):
         """
