@@ -52,7 +52,7 @@ def main():
         logger.info("Checking reported vs estimated gender...")
         preprocessing_caf.reported_vs_genetic_gender_check()
         logger.info("Matching cases/controls based on the features given in `list_matching`...")
-        preprocessing_caf.matching_list(logger)
+        preprocessing_caf.matching_list()
         logger.info("Writing CAF preprocessing log file")
         f_log = preprocessing_caf.write_log()
         logger.info("Check %s to see the summary" % f_log)
