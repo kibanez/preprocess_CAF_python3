@@ -3,7 +3,11 @@ import os
 import numpy as np
 import pandas as pd
 import epydemiology as epy
+from copy import copy, deepcopy
 from datetime import datetime
+
+
+
 
 
 class CAFPreprocess:
@@ -57,6 +61,9 @@ class CAFPreprocess:
             self.cc_ratio = cc_ratio
 
         self.list_matching = hash_cfg.get('list_matching').split(',')
+        self.match_gender = False
+        self.match_ancestry = False
+        self.match_age = False
         if len(self.list_matching) > 0:
             for match_name in self.list_matching:
                 if match_name == 'gender':
@@ -65,10 +72,6 @@ class CAFPreprocess:
                     self.match_age = True
                 elif match_name == "ancestry":
                     self.match_ancestry = True
-        else:
-            self.match_gender = False
-            self.match_age = False
-            self.match_ancestry = False
 
         if self.match_age:
             self.df_cases_age = self.read_cohort_age(f_cases)
@@ -341,23 +344,51 @@ class CAFPreprocess:
         if len(self.list_matching) == 0:
             l_matching_variables = None
         else:
-            l_matching_variables = self.list_matching
+            l_matching_variables = copy(self.list_matching)
             # Leave `age` at the end of the list, if exists
-            if 'age' in l_matching_variables:
+            if 'age' in self.list_matching:
                 l_matching_variables.remove('age')
-                l_matching_variables.append('age')
+
+        # prepare cases and controls tables for comparison and matching purposes
+        # self.id_cc | l_matching_variables order
+        # if age, we need to use `df_cases_age` and `df_controls_age`, otherwise only metadata
+
+        if 'age' in self.list_matching:
+            id_cases_age = self.df_cases_age[[self.id_cc]]
+            mask_cases = self.metadata_cases[self.id_cc].isin(id_cases_age)
+            df_cases = self.metadata_cases.loc[~mask_cases]
+            df_cases = df_cases[l_matching_variables]
+            df_cases_selected = pd.concat([df_cases.reset_index(drop=True),
+                                           self.df_cases_age],
+                                          axis=1)
+
+            id_controls_age = self.df_controls_age[[self.id_cc]]
+            mask_controls = self.metadata_controls[self.id_cc].isin(id_controls_age)
+            df_controls = self.metadata_controls.loc[~mask_controls]
+            df_controls = df_controls[l_matching_variables]
+            df_controls_selected = pd.concat([df_controls.reset_index(drop=True),
+                                              self.df_controls_age],
+                                             axis=1)
+
+            l_matching_variables.append('age')
+
+        else:
+            l_matching_variables.append(self.id_cc)
+            df_cases_selected = self.metadata_cases[l_matching_variables]
+            df_controls_selected = self.metadata_controls[l_matching_variables]
 
         matched_controls = epy.phjSelectCaseControlDataset(phjCasesDF=
-                                                           self.df_cases_age,
+                                                           df_cases_selected,
                                                            phjPotentialControlsDF=
-                                                           self.df_controls_age,
+                                                           df_controls_selected,
                                                            phjUniqueIdentifierVarName=
                                                            self.id_cc,
                                                            phjMatchingVariablesList=
-                                                           l_matching_variables,
+                                                           self.list_matching,
                                                            phjControlsPerCaseInt=
                                                            int(self.cc_ratio),
-                                                           phjPrintResults=False)
+                                                           phjPrintResults=
+                                                           False)
 
         # Save matched/selected cases AND controls into matched cases AND controls respectively
         self.l_cases_matched = matched_controls.loc[matched_controls['case'] == 1][[
