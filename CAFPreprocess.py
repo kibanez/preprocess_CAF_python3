@@ -130,7 +130,14 @@ class CAFPreprocess:
         l_ids = cohort_data.iloc[:, 0].tolist()
         l_age = cohort_data.iloc[:, 1].tolist()
         dict_age = {self.id_cc: l_ids, 'age': l_age}
-        return pd.DataFrame(dict_age)
+
+        # make age data discrete, by categories,s
+        df_age = pd.DataFrame(dict_age)
+        bin = [0, 40, 70, 120]
+        category = pd.cut(df_age.age, bin)
+        category.columns = ['range']
+        df_age_discrete = pd.concat([df_age[self.id_cc], category], axis=1)
+        return df_age_discrete
 
     def read_metadata(self, file_metadata, l_cohort, id_selection):
         """
