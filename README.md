@@ -1,4 +1,4 @@
-# Harmonising case and control cohorts 
+# Pipeline for harmonising case and control cohorts 
 
 ## Objective
 
